@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Spotify Style Music Player</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700&display=swap" rel="stylesheet">
+
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        body {
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: #121212;
+            color: white;
+        }
+
+        /* Player */
+        .player {
+            width: 360px;
+            padding: 20px;
+            border-radius: 20px;
+            background: #181818;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
+            text-align: center;
+        }
+
+        /* Song Info */
+        .song-info h2 {
+            margin: 5px 0;
+        }
+
+        .song-info p {
+            opacity: 0.7;
+            font-size: 0.9rem;
+        }
+
+        /* Wave Animation */
+        .wave {
+            display: flex;
+            justify-content: center;
+            margin: 15px 0;
+        }
+
+        .wave span {
+            width: 4px;
+            height: 20px;
+            margin: 0 2px;
+            background: #1db954;
+            animation: wave 1s infinite ease-in-out;
+        }
+
+        .wave span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .wave span:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        .wave span:nth-child(4) {
+            animation-delay: 0.6s;
+        }
+
+        .wave span:nth-child(5) {
+            animation-delay: 0.8s;
+        }
+
+        @keyframes wave {
+
+            0%,
+            100% {
+                height: 10px;
+            }
+
+            50% {
+                height: 30px;
+            }
+        }
+
+        .wave.paused span {
+            animation: none;
+            height: 10px;
+        }
+
+        /* Controls */
+        .controls button {
+            margin: 10px;
+            padding: 10px;
+            font-size: 18px;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+
+        .play-btn {
+            width: 60px;
+            height: 60px;
+            background: #1db954;
+            color: black;
+            font-size: 22px;
+        }
+
+        .controls button:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 15px #1db954;
+        }
+
+        /* Progress */
+        .progress-container {
+            width: 100%;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            cursor: pointer;
+        }
+
+        .progress {
+            height: 100%;
+            width: 0%;
+            background: #1db954;
+        }
+
+        /* Time */
+        .time {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8rem;
+        }
+
+        /* Volume */
+        .volume {
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        /* Playlist */
+        .playlist {
+            margin-top: 15px;
+            text-align: left;
+            max-height: 120px;
+            overflow-y: auto;
+        }
+
+        .playlist div {
+            padding: 6px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .playlist div:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="player">
+
+        <div class="song-info">
+            <h2 id="title">Song</h2>
+            <p id="artist">Artist</p>
+        </div>
+
+        <audio id="audio"></audio>
+
+        <!-- Wave -->
+        <div class="wave paused" id="wave">
+            <span></span><span></span><span></span><span></span><span></span>
+        </div>
+
+        <!-- Progress -->
+        <div class="progress-container" onclick="setProgress(event)">
+            <div class="progress" id="progress"></div>
+        </div>
+
+        <div class="time">
+            <span id="current">0:00</span>
+            <span id="duration">0:00</span>
+        </div>
+
+        <!-- Controls -->
+        <div class="controls">
+            <button onclick="prevSong()">⏮</button>
+            <button class="play-btn" id="playBtn" onclick="togglePlay()">▶</button>
+            <button onclick="nextSong()">⏭</button>
+        </div>
+
+        <!-- Volume -->
+        <input type="range" class="volume" min="0" max="1" step="0.01" onchange="setVolume(this.value)">
+
+        <!-- Playlist -->
+        <div class="playlist" id="playlist"></div>
+
+    </div>
+
+    <script>
+        const songs = [{
+                title: "Dreams",
+                artist: "Chill Vibes",
+                src: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3"
+            },
+            {
+                title: "Night Drive",
+                artist: "LoFi Beats",
+                src: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3"
+            },
+            {
+                title: "Skyline",
+                artist: "Ambient Flow",
+                src: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3"
+            }
+        ];
+
+        let index = 0;
+        let audio = document.getElementById("audio");
+        const playBtn = document.getElementById("playBtn");
+        const wave = document.getElementById("wave");
+
+        /* Load Song */
+        function loadSong(i) {
+            let song = songs[i];
+            document.getElementById("title").innerText = song.title;
+            document.getElementById("artist").innerText = song.artist;
+            audio.src = song.src;
+        }
+
+        /* Play/Pause */
+        function togglePlay() {
+            if (audio.paused) {
+                audio.play();
+            } else {
+                audio.pause();
+            }
+        }
+
+        /* Sync UI */
+        audio.addEventListener("play", () => {
+            playBtn.innerText = "⏸";
+            wave.classList.remove("paused");
+        });
+
+        audio.addEventListener("pause", () => {
+            playBtn.innerText = "▶";
+            wave.classList.add("paused");
+        });
+
+        /* Next/Prev */
+        function nextSong() {
+            index = (index + 1) % songs.length;
+            loadSong(index);
+            audio.play();
+        }
+
+        function prevSong() {
+            index = (index - 1 + songs.length) % songs.length;
+            loadSong(index);
+            audio.play();
+        }
+
+        /* Progress */
+        audio.addEventListener("timeupdate", () => {
+            let percent = (audio.currentTime / audio.duration) * 100;
+            document.getElementById("progress").style.width = percent + "%";
+
+            document.getElementById("current").innerText = formatTime(audio.currentTime);
+            document.getElementById("duration").innerText = formatTime(audio.duration);
+        });
+
+        function setProgress(e) {
+            let width = e.currentTarget.clientWidth;
+            let clickX = e.offsetX;
+            audio.currentTime = (clickX / width) * audio.duration;
+        }
+
+        function formatTime(time) {
+            let min = Math.floor(time / 60) || 0;
+            let sec = Math.floor(time % 60) || 0;
+            return `${min}:${sec < 10 ? "0" : ""}${sec}`;
+        }
+
+        /* Volume */
+        function setVolume(val) {
+            audio.volume = val;
+        }
+
+        /* Playlist */
+        function loadPlaylist() {
+            let list = document.getElementById("playlist");
+            songs.forEach((song, i) => {
+                let item = document.createElement("div");
+                item.innerText = song.title + " - " + song.artist;
+                item.onclick = () => {
+                    index = i;
+                    loadSong(index);
+                    audio.play();
+                };
+                list.appendChild(item);
+            });
+        }
+
+        /* Autoplay */
+        audio.addEventListener("ended", nextSong);
+
+        /* Init */
+        loadSong(index);
+        loadPlaylist();
+    </script>
+
+</body>
+
+</html>
